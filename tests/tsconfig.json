@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "target": "esnext",
+    "moduleResolution": "nodenext",
+    "allowJs": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "strict": false,
+    "paths": {
+      "@utils/*": ["./fixtures/graph/utils/*"]
+    }
+  },
+  "include": ["**/*.ts"]
+}
