@@ -1,0 +1,10 @@
+tests/
+src/
+tsconfig*
+eslint.config.js
+.vscode/
+node_modules/
+.github/
+.prettierignore
+.prettierrc.json
+scripts/
