@@ -6,13 +6,31 @@ import { logUnusedExports, logUnusedFiles, logUnusedLocals, logVerbose, summary 
 import { showHelp } from "./help";
 import { parseArgs } from "./parser";
 
+import { statSync } from "fs";
 import path from "path";
+
+function resolveAndValidateCwd(rawCwd?: string): string {
+  const resolvedCwd = rawCwd ? path.resolve(process.cwd(), rawCwd) : process.cwd();
+
+  if (!rawCwd) return resolvedCwd;
+
+  try {
+    if (!statSync(resolvedCwd).isDirectory()) {
+      throw new Error("--cwd is not a directory");
+    }
+  } catch {
+    log(`Error: --cwd does not exist or is not a directory: ${resolvedCwd}`);
+    process.exit(1);
+  }
+
+  return resolvedCwd;
+}
 
 (async () => {
   const args = parseArgs(process.argv.slice(2));
   const [command, targetPath] = args._;
 
-  const cwd = args.cwd ? path.resolve(process.cwd(), args.cwd) : process.cwd();
+  const cwd = resolveAndValidateCwd(args.cwd);
 
   // Internal single-file analysis mode
   if (command === "internal") {
