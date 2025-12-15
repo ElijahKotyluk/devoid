@@ -1,10 +1,10 @@
 // tests/cli.basic.test.ts
 
-import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import fs from "node:fs";
-import { resolve } from "node:path";
+import assert from "assert/strict";
+import { spawnSync } from "child_process";
+import fs from "fs";
 import { test } from "node:test";
+import { resolve } from "path";
 
 const CLI_PATH = resolve("bin", "devoid.js");
 const PKG_PATH = resolve("package.json");

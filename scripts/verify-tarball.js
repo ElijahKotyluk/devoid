@@ -1,7 +1,7 @@
-const { execSync } = require("node:child_process");
-const fs = require("node:fs");
-const os = require("node:os");
-const path = require("node:path");
+const { execSync } = require("child_process");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 
 function run(cmd, cwd = process.cwd()) {
   console.log(`\n> ${cmd}`);
