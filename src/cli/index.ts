@@ -6,21 +6,26 @@ import { logUnusedExports, logUnusedFiles, logUnusedLocals, logVerbose, summary 
 import { showHelp } from "./help";
 import { parseArgs } from "./parser";
 
+import path from "path";
+
 (async () => {
   const args = parseArgs(process.argv.slice(2));
-  const [command, commandTarget] = args._;
+  const [command, targetPath] = args._;
+
+  const cwd = args.cwd ? path.resolve(process.cwd(), args.cwd) : process.cwd();
 
   // Internal single-file analysis mode
   if (command === "internal") {
     if (args.help) {
       if (!args.silent) {
         log("Usage: devoid internal <file.ts> [options]");
-        log("Run `devoid --help` for full command list.");
+        log("Run `devoid --help` for global options.");
       }
       process.exit(0);
     }
 
-    const filePath = commandTarget;
+    const filePath = targetPath ? path.resolve(cwd, targetPath) : null;
+
     if (!filePath) {
       if (!args.silent) {
         log("Error: No file provided for internal analysis.");
@@ -32,7 +37,7 @@ import { parseArgs } from "./parser";
     disableLogPrefix();
 
     const { runInternalMode } = await import("./internalMode.js");
-    await runInternalMode(filePath, args);
+    await runInternalMode(filePath, { ...args, cwd });
     process.exit(0);
   }
 
@@ -62,7 +67,8 @@ import { parseArgs } from "./parser";
   }
 
   // Project root path
-  const projectRoot = args._[0];
+  const projectRoot = args._[0] ? path.resolve(cwd, args._[0]) : null;
+
   if (!projectRoot) {
     if (!silent) {
       log("Error: No project path provided.");
@@ -72,7 +78,7 @@ import { parseArgs } from "./parser";
   }
 
   // Run full-project analysis
-  const results = analyzeProject(projectRoot, args);
+  const results = analyzeProject(projectRoot, { ...args, cwd });
 
   // JSON output
   if (args.json) {

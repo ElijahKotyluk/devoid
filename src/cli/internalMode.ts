@@ -1,4 +1,6 @@
 import fs from "fs";
+import path from "path";
+
 import { analyzeLocalUsage } from "../core/locals/analyzeLocalUsage";
 import { log } from "../utils";
 import { colors } from "./colors";
@@ -16,6 +18,7 @@ import { heading } from "./format";
 export async function runInternalMode(filePath: string, args: any): Promise<void> {
   const SILENT_MODE = !!args.silent;
   let sourceText: string;
+  filePath = path.resolve(args.cwd, filePath)
 
   // Read file
   try {
