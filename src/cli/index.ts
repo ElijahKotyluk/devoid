@@ -52,7 +52,7 @@ function resolveAndValidateCwd(rawCwd?: string): string {
           log(`Error: Unable to access --cwd:\n  ${resolvedCwd}`);
       }
     } else {
-       log(`Error: Unable to access --cwd:\n  ${resolvedCwd}`);
+      log(`Error: Unable to access --cwd:\n  ${resolvedCwd}`);
     }
 
     process.exit(1);
