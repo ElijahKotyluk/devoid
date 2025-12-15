@@ -1,7 +1,7 @@
-import assert from "node:assert";
-import fs from "node:fs";
-import path from "node:path";
+import assert from "assert";
+import fs from "fs";
 import test from "node:test";
+import path from "path";
 
 import { analyzeLocalUsage } from "../../src/core/locals/analyzeLocalUsage";
 

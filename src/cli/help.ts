@@ -14,6 +14,7 @@ ${colors.bold}Commands:${colors.reset}
   internal <file>         Run intra-file identifier analysis only.
 
 ${colors.bold}General Options:${colors.reset}
+  --cwd <path>            Set the current working directory for analysis (default: process.cwd())
   --help                  Show this help message
   --json                  Machine-readable output
   --silent                Suppress all non-JSON output

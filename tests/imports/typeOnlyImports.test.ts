@@ -1,5 +1,5 @@
+import assert from "assert";
 import fs from "fs";
-import assert from "node:assert";
 import test from "node:test";
 import path from "path";
 

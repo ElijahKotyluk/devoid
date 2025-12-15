@@ -6,21 +6,79 @@ import { logUnusedExports, logUnusedFiles, logUnusedLocals, logVerbose, summary 
 import { showHelp } from "./help";
 import { parseArgs } from "./parser";
 
+import { statSync } from "fs";
+import path from "path";
+
+export function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error?.code === "string"
+  );
+}
+
+function resolveAndValidateCwd(rawCwd?: string): string {
+  const resolvedCwd = rawCwd ? path.resolve(process.cwd(), rawCwd) : process.cwd();
+
+  if (!rawCwd) return resolvedCwd;
+
+  let stat;
+
+  try {
+    stat = statSync(resolvedCwd);
+
+    if (!stat.isDirectory()) {
+      log(`Error: --cwd is not a directory: ${resolvedCwd}`);
+      process.exit(1);
+    }
+  } catch (error) {
+    if (isNodeError(error)) {
+      switch (error.code) {
+        case "ENOENT":
+          log(`Error: --cwd path does not exist:\n  ${resolvedCwd}`);
+          break;
+
+        case "ENOTDIR":
+          log(`Error: --cwd contains a non-directory segment:\n  ${resolvedCwd}`);
+          break;
+
+        case "EACCES":
+        case "EPERM":
+          log(`Error: Permission denied accessing --cwd:\n  ${resolvedCwd}`);
+          break;
+
+        default:
+          log(`Error: Unable to access --cwd:\n  ${resolvedCwd}`);
+      }
+    } else {
+      log(`Error: Unable to access --cwd:\n  ${resolvedCwd}`);
+    }
+
+    process.exit(1);
+  }
+
+  return resolvedCwd;
+}
+
 (async () => {
   const args = parseArgs(process.argv.slice(2));
-  const [command, commandTarget] = args._;
+  const [command, targetPath] = args._;
+
+  const cwd = resolveAndValidateCwd(args.cwd);
 
   // Internal single-file analysis mode
   if (command === "internal") {
     if (args.help) {
       if (!args.silent) {
         log("Usage: devoid internal <file.ts> [options]");
-        log("Run `devoid --help` for full command list.");
+        log("Run `devoid --help` for global options.");
       }
       process.exit(0);
     }
 
-    const filePath = commandTarget;
+    const filePath = targetPath ? path.resolve(cwd, targetPath) : null;
+
     if (!filePath) {
       if (!args.silent) {
         log("Error: No file provided for internal analysis.");
@@ -62,7 +120,8 @@ import { parseArgs } from "./parser";
   }
 
   // Project root path
-  const projectRoot = args._[0];
+  const projectRoot = args._[0] ? path.resolve(cwd, args._[0]) : null;
+
   if (!projectRoot) {
     if (!silent) {
       log("Error: No project path provided.");

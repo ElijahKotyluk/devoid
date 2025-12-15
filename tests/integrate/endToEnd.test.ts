@@ -1,6 +1,6 @@
-import assert from "node:assert";
-import path from "node:path";
+import assert from "assert";
 import test from "node:test";
+import path from "path";
 
 import { analyzeProject } from "../../src/core/analyzer";
 
