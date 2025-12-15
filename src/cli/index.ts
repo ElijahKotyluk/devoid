@@ -9,17 +9,52 @@ import { parseArgs } from "./parser";
 import { statSync } from "fs";
 import path from "path";
 
+export function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error?.code === "string"
+  );
+}
+
 function resolveAndValidateCwd(rawCwd?: string): string {
   const resolvedCwd = rawCwd ? path.resolve(process.cwd(), rawCwd) : process.cwd();
 
   if (!rawCwd) return resolvedCwd;
 
+  let stat;
+
   try {
-    if (!statSync(resolvedCwd).isDirectory()) {
-      throw new Error("--cwd is not a directory");
+    stat = statSync(resolvedCwd);
+
+    if (!stat.isDirectory()) {
+      log(`Error: --cwd is not a directory: ${resolvedCwd}`);
+      process.exit(1);
     }
-  } catch {
-    log(`Error: --cwd does not exist or is not a directory: ${resolvedCwd}`);
+  } catch (error) {
+    if (isNodeError(error)) {
+      switch (error.code) {
+        case "ENOENT":
+          log(`Error: --cwd path does not exist:\n  ${resolvedCwd}`);
+          break;
+
+        case "ENOTDIR":
+          log(`Error: --cwd contains a non-directory segment:\n  ${resolvedCwd}`);
+          break;
+
+        case "EACCES":
+        case "EPERM":
+          log(`Error: Permission denied accessing --cwd:\n  ${resolvedCwd}`);
+          break;
+
+        default:
+          log(`Error: Unable to access --cwd:\n  ${resolvedCwd}`);
+      }
+    } else {
+       log(`Error: Unable to access --cwd:\n  ${resolvedCwd}`);
+    }
+
     process.exit(1);
   }
 
