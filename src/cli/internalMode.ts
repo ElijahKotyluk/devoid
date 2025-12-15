@@ -1,4 +1,4 @@
-import fs from "fs";
+import { readFileSync } from "fs";
 
 import { analyzeLocalUsage } from "../core/locals/analyzeLocalUsage";
 import { log } from "../utils";
@@ -20,7 +20,7 @@ export async function runInternalMode(filePath: string, args: any): Promise<void
 
   // Read file
   try {
-    sourceText = fs.readFileSync(filePath, "utf8");
+    sourceText = readFileSync(filePath, "utf8");
   } catch (error) {
     if (!SILENT_MODE) {
       log(`${colors.red}Error: Unable to read file: ${filePath}${colors.reset}`);
