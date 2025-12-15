@@ -18,7 +18,7 @@ import { heading } from "./format";
 export async function runInternalMode(filePath: string, args: any): Promise<void> {
   const SILENT_MODE = !!args.silent;
   let sourceText: string;
-  filePath = path.resolve(args.cwd, filePath)
+  filePath = path.resolve(args.cwd, filePath);
 
   // Read file
   try {
