@@ -55,7 +55,7 @@ function resolveAndValidateCwd(rawCwd?: string): string {
     disableLogPrefix();
 
     const { runInternalMode } = await import("./internalMode.js");
-    await runInternalMode(filePath, { ...args, cwd });
+    await runInternalMode(filePath, args);
     process.exit(0);
   }
 
@@ -96,7 +96,7 @@ function resolveAndValidateCwd(rawCwd?: string): string {
   }
 
   // Run full-project analysis
-  const results = analyzeProject(projectRoot, { ...args, cwd });
+  const results = analyzeProject(projectRoot, args);
 
   // JSON output
   if (args.json) {
