@@ -13,25 +13,27 @@ function writeFile(filePath: string, contents: string) {
 }
 
 test("entrypoints: package.json exports (string) maps dist -> src", () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "devoid-entrypoints-"));
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "devoid-entrypoints-"));
 
   writeFile(
-    path.join(root, "package.json"),
+    path.join(tmpRoot, "package.json"),
     JSON.stringify({ exports: "./dist/index.js" }, null, 2),
   );
-  writeFile(path.join(root, "src", "index.ts"), `export const foo = 1;\n`);
+  writeFile(path.join(tmpRoot, "src", "index.ts"), `export const foo = 1;\n`);
 
-  const projectFiles = [normalizeFilePath(path.join(root, "src", "index.ts"))];
+  const projectFiles = [normalizeFilePath(path.join(tmpRoot, "src", "index.ts"))];
 
-  const info = detectEntryPoints(root, projectFiles);
-  assert.ok(info.fromPackageJson.has(normalizeFilePath(path.join(root, "src", "index.ts"))));
+  const info = detectEntryPoints(tmpRoot, projectFiles);
+  assert.ok(info.fromPackageJson.has(normalizeFilePath(path.join(tmpRoot, "src", "index.ts"))));
+
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
 test("entrypoints: package.json exports (conditional object) maps dist -> src", () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "devoid-entrypoints-"));
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "devoid-entrypoints-"));
 
   writeFile(
-    path.join(root, "package.json"),
+    path.join(tmpRoot, "package.json"),
     JSON.stringify(
       {
         exports: {
@@ -47,19 +49,21 @@ test("entrypoints: package.json exports (conditional object) maps dist -> src", 
       2,
     ),
   );
-  writeFile(path.join(root, "src", "index.ts"), `export const foo = 1;\n`);
+  writeFile(path.join(tmpRoot, "src", "index.ts"), `export const foo = 1;\n`);
 
-  const projectFiles = [normalizeFilePath(path.join(root, "src", "index.ts"))];
+  const projectFiles = [normalizeFilePath(path.join(tmpRoot, "src", "index.ts"))];
 
-  const info = detectEntryPoints(root, projectFiles);
-  assert.ok(info.fromPackageJson.has(normalizeFilePath(path.join(root, "src", "index.ts"))));
+  const info = detectEntryPoints(tmpRoot, projectFiles);
+  assert.ok(info.fromPackageJson.has(normalizeFilePath(path.join(tmpRoot, "src", "index.ts"))));
+
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
 test("entrypoints: package.json exports (array) finds string targets", () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "devoid-entrypoints-"));
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "devoid-entrypoints-"));
 
   writeFile(
-    path.join(root, "package.json"),
+    path.join(tmpRoot, "package.json"),
     JSON.stringify(
       {
         exports: {
@@ -71,11 +75,12 @@ test("entrypoints: package.json exports (array) finds string targets", () => {
     ),
   );
 
-  writeFile(path.join(root, "src", "index.ts"), `export const foo = 1;\n`);
+  writeFile(path.join(tmpRoot, "src", "index.ts"), `export const foo = 1;\n`);
 
-  const projectFiles = [normalizeFilePath(path.join(root, "src", "index.ts"))];
+  const projectFiles = [normalizeFilePath(path.join(tmpRoot, "src", "index.ts"))];
 
-  const info = detectEntryPoints(root, projectFiles);
+  const info = detectEntryPoints(tmpRoot, projectFiles);
+  assert.ok(info.fromPackageJson.has(normalizeFilePath(path.join(tmpRoot, "src", "index.ts"))));
 
-  assert.ok(info.fromPackageJson.has(normalizeFilePath(path.join(root, "src", "index.ts"))));
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
