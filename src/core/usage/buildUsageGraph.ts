@@ -49,7 +49,7 @@ function hasSideEffects(_filePath: string, fileText: string): boolean {
     /\bsetInterval\s*\(/,
     /\bconsole\.[a-zA-Z]+\s*\(/,
     /\bprocess\./,
-    /\bnew\s+[A-Za-z_$]/,
+    /\bnew\s+[A-Za-z_$][A-Za-z0-9_$]*/,
     /^\s*\(/, // IIFE
   ];
 

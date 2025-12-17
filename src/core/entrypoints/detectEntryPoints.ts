@@ -47,7 +47,7 @@ function resolveFromPackageJson(projectRoot: string, projectFiles: Set<string>):
   if (typeof pkg.main === "string") candidatePaths.push(pkg.main);
   if (typeof pkg.module === "string") candidatePaths.push(pkg.module);
   if (typeof pkg.types === "string") candidatePaths.push(pkg.types);
-  else if (typeof pkg.typings === "string") candidatePaths.push(pkg.typings);
+  if (typeof pkg.typings === "string") candidatePaths.push(pkg.typings);
 
   // package.json bin - string or object
   if (typeof pkg.bin === "string") {
