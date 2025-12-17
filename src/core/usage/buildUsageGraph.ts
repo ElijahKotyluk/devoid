@@ -1,7 +1,9 @@
+import path from "path";
 import ts from "typescript";
 
 import { analyzeExportUsage } from "../exports/exportUsage";
 import type { ExportInfo } from "../exports/scanExports";
+import { normalizeFilePath } from "../fileSystem/normalizePath";
 import type { ImportRecord } from "../imports/buildImportGraph";
 import { analyzeLocalUsage, type LocalUsageOptions } from "../locals/analyzeLocalUsage";
 
@@ -30,36 +32,149 @@ export interface UsageGraph {
  * Avoids labeling non-pure modules as unused.
  */
 function hasSideEffects(_filePath: string, fileText: string): boolean {
-  const trimmedText = fileText.trim();
-  const nonEmptyLines = trimmedText
+  const text = fileText.trim();
+
+  if (!text) return false;
+
+  // export-only → assumed pure
+  const lines = text
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
 
-  // export-only → assumed pure
-  if (nonEmptyLines.length > 0 && nonEmptyLines.every((line) => line.startsWith("export "))) {
-    return false;
-  }
+  if (lines.length > 0 && lines.every((line) => line.startsWith("export "))) return false;
 
-  // simple heuristics
-  if (/\bsetTimeout\s*\(/.test(trimmedText)) return true;
-  if (/\bsetInterval\s*\(/.test(trimmedText)) return true;
-  if (/\bconsole\.[a-zA-Z]+\s*\(/.test(trimmedText)) return true;
-  if (/\bprocess\./.test(trimmedText)) return true;
-  if (/\bnew\s+[A-Za-z_$]/.test(trimmedText)) return true;
-  if (/^\s*\(/.test(trimmedText)) return true; // IIFE
+  const sideEffectPatterns: RegExp[] = [
+    /\bsetTimeout\s*\(/,
+    /\bsetInterval\s*\(/,
+    /\bconsole\.[a-zA-Z]+\s*\(/,
+    /\bprocess\./,
+    /\bnew\s+[A-Za-z_$]/,
+    /^\s*\(/, // IIFE
+  ];
 
-  return false;
+  return sideEffectPatterns.some((regEx) => regEx.test(text));
 }
 
-// Returns true if a module contains any kind of export.
-function fileExportsAnything(exportInfo: ExportInfo): boolean {
-  return (
-    exportInfo.named.length > 0 ||
-    exportInfo.default === true ||
-    exportInfo.namedReexports.length > 0 ||
-    exportInfo.wildcardReexports.length > 0
-  );
+function resolveModuleToProjectFile(
+  fromFile: string,
+  moduleSpecifier: string,
+  projectFilesSet: Set<string>,
+): string | null {
+  // Follow only relative specifiers; bare specifiers are external deps
+  if (!moduleSpecifier.startsWith(".")) return null;
+
+  const baseDir = path.dirname(fromFile);
+  const resolvedBase = path.resolve(baseDir, moduleSpecifier);
+
+  const candidates = [
+    resolvedBase,
+    resolvedBase + ".ts",
+    resolvedBase + ".tsx",
+    resolvedBase + ".js",
+    resolvedBase + ".jsx",
+    path.join(resolvedBase, "index.ts"),
+    path.join(resolvedBase, "index.tsx"),
+    path.join(resolvedBase, "index.js"),
+    path.join(resolvedBase, "index.jsx"),
+  ].map(normalizeFilePath);
+
+  for (const candidate of candidates) {
+    if (projectFilesSet.has(candidate)) return candidate;
+  }
+
+  return null;
+}
+
+function buildProjectAdjacency(
+  filePaths: string[],
+  importGraph: Record<string, ImportRecord[]>,
+  exportMap: Record<string, ExportInfo>,
+): Map<string, Set<string>> {
+  const projectFilesSet = new Set(filePaths);
+  const fileDependencyGraph = new Map<string, Set<string>>();
+
+  function addEdge(from: string, to: string) {
+    if (!projectFilesSet.has(to)) return;
+
+    let set = fileDependencyGraph.get(from);
+
+    if (!set) {
+      set = new Set();
+      fileDependencyGraph.set(from, set);
+    }
+
+    set.add(to);
+  }
+
+  // Import edges
+  for (const [from, edges] of Object.entries(importGraph)) {
+    for (const edge of edges) {
+      addEdge(from, edge.sourceFile);
+    }
+  }
+
+  // Re-export edges (barrel dependencies)
+  for (const from of filePaths) {
+    const ex = exportMap[from];
+
+    if (!ex) continue;
+
+    for (const spec of ex.wildcardReexports) {
+      const to = resolveModuleToProjectFile(from, spec, projectFilesSet);
+
+      if (to) addEdge(from, to);
+    }
+    for (const nr of ex.namedReexports) {
+      const to = resolveModuleToProjectFile(from, nr.from, projectFilesSet);
+
+      if (to) addEdge(from, to);
+    }
+  }
+
+  // Ensure every file exists as a key (even leaf nodes)
+  for (const file of filePaths) {
+    if (!fileDependencyGraph.has(file)) fileDependencyGraph.set(file, new Set());
+  }
+
+  return fileDependencyGraph;
+}
+
+function computeIncomingCounts(adjacentsMap: Map<string, Set<string>>): Map<string, number> {
+  const incoming = new Map<string, number>();
+  for (const [from, tos] of adjacentsMap.entries()) {
+    if (!incoming.has(from)) incoming.set(from, 0);
+
+    for (const to of tos) {
+      incoming.set(to, (incoming.get(to) ?? 0) + 1);
+    }
+  }
+  return incoming;
+}
+
+function findReachableFromRoots(
+  fileDependencyGraph: Map<string, Set<string>>,
+  roots: Set<string>,
+): Set<string> {
+  const visited = new Set<string>();
+  const stack = [...roots];
+
+  while (stack.length > 0) {
+    const file = stack.pop()!;
+
+    if (visited.has(file)) continue;
+
+    visited.add(file);
+
+    const next = fileDependencyGraph.get(file);
+    if (!next) continue;
+
+    for (const to of next) {
+      if (!visited.has(to)) stack.push(to);
+    }
+  }
+
+  return visited;
 }
 
 /**
@@ -75,10 +190,7 @@ export function buildUsageGraph(
   options: LocalUsageOptions = {},
   _entryPoints: Set<string> = new Set(),
 ): UsageGraph {
-  const { used: usedExportsByFile, unused: unusedExportsByFile } = analyzeExportUsage(
-    exportMap,
-    importGraph,
-  );
+  const { unused: unusedExportsByFile } = analyzeExportUsage(exportMap, importGraph);
 
   // Collect unused exports
   const unusedExports: { file: string; name: string }[] = [];
@@ -97,6 +209,7 @@ export function buildUsageGraph(
 
   for (const filePath of filePaths) {
     const fileText = getSourceText(filePath);
+
     if (!fileText) continue;
 
     const localUsage = analyzeLocalUsage(filePath, fileText, {
@@ -109,27 +222,35 @@ export function buildUsageGraph(
   }
 
   // Detect unused files
+  const fileDependencyGraph = buildProjectAdjacency(filePaths, importGraph, exportMap);
+
   const unusedFiles: string[] = [];
 
-  for (const filePath of filePaths) {
-    const exportInfo = exportMap[filePath];
-    if (!exportInfo) continue;
+  if (_entryPoints.size === 0) {
+    // If no entrypoints are detected we default to orphan detection
+    // Mark the files with no incoming edges as unused unless they contain side effects.
+    const incoming = computeIncomingCounts(fileDependencyGraph);
 
-    const importRecords = importGraph[filePath] ?? [];
-    const moduleHasExports = fileExportsAnything(exportInfo);
-    const moduleHasImports = importRecords.length > 0;
+    for (const file of filePaths) {
+      if ((incoming.get(file) ?? 0) !== 0) continue;
 
-    const usedExportsInFile = usedExportsByFile[filePath] ?? new Set<string>();
-    const moduleExportsAreUsed = usedExportsInFile.size > 0;
+      const fileText = getSourceText(file) ?? "";
+      if (hasSideEffects(file, fileText)) continue;
 
-    if (!moduleHasExports) continue;
-    if (moduleExportsAreUsed) continue;
-    if (moduleHasImports) continue;
+      unusedFiles.push(file);
+    }
+  } else {
+    // Mark files not reachable from entrypoints as unused unless they contain side effects.
+    const reachable = findReachableFromRoots(fileDependencyGraph, _entryPoints);
 
-    const fileText = getSourceText(filePath) ?? "";
-    if (hasSideEffects(filePath, fileText)) continue;
+    for (const file of filePaths) {
+      if (reachable.has(file)) continue;
 
-    unusedFiles.push(filePath);
+      const fileText = getSourceText(file) ?? "";
+      if (hasSideEffects(file, fileText)) continue;
+
+      unusedFiles.push(file);
+    }
   }
 
   return {
