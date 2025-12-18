@@ -23,6 +23,8 @@ test("--cwd: resolves project root relative to cwd", () => {
   assert.equal(code, 0);
   assert.match(stdout, /Unused Exports/i);
   assert.match(stdout, /\bfoo\b/);
+
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
 test("--cwd: resolves internal mode file path relative to cwd", () => {
@@ -46,6 +48,8 @@ usedFn();
   assert.equal(code, 0);
   assert.match(stdout, /Internal Usage Analysis/i);
   assert.match(stdout, /\bunusedFn\b/);
+
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
 test("--cwd: errors if directory does not exist", () => {
@@ -56,6 +60,8 @@ test("--cwd: errors if directory does not exist", () => {
   assert.equal(code, 1);
   assert.match(stdout, /--cwd/i);
   assert.match(stdout, /does not exist/i);
+
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
 test("--cwd: errors if path exists but is not a directory", () => {
@@ -68,6 +74,8 @@ test("--cwd: errors if path exists but is not a directory", () => {
   assert.equal(code, 1);
   assert.match(stdout, /--cwd/i);
   assert.match(stdout, /not a directory/i);
+
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
 test("--cwd: works without --cwd (baseline behavior unchanged)", () => {
@@ -80,4 +88,6 @@ test("--cwd: works without --cwd (baseline behavior unchanged)", () => {
 
   assert.equal(code, 0);
   assert.match(stdout, /\bfoo\b/);
+
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
 });

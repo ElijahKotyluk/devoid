@@ -72,3 +72,12 @@ test("barrel modules: mixed named + wildcard re-exports propagate properly", () 
   assert(!unused.has("beta"), "beta should be used");
   assert(!unused.has("gamma"), "gamma should be used");
 });
+
+test("barrel modules: re-export target is not considered unused", () => {
+  const project = analyze(FIXTURE_ROOT);
+  const unusedFiles = new Set(project.unusedFiles);
+
+  const utilPath = path.join(FIXTURE_ROOT, "shared", "util.ts");
+
+  assert(!unusedFiles.has(utilPath), "re-exported util should not be flagged unused");
+});
