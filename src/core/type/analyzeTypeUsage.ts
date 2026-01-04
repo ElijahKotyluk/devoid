@@ -64,7 +64,6 @@ export function analyzeTypeUsage(filePath: string, sourceText: string): TypeUsag
       else
         ts.forEachChild(child, (g) => {
           if (ts.isTypeNode(g)) collectTypeRefsFromTypeNode(g);
-          else ts.forEachChild(g, () => {});
         });
     });
   }

@@ -138,11 +138,11 @@ function resolveAndValidateCwd(rawCwd?: string): string {
 
   // Optional: run types analysis ONLY when requested
   if (typesMode) {
-    const { walkFiles } = require("../core/fileSystem/walkFiles");
+    const { walkFiles } = await import("../core/fileSystem/walkFiles");
 
-    const { loadTSConfig } = require("../core/tsconfig/tsconfigLoader");
+    const { loadTSConfig } = await import("../core/tsconfig/tsconfigLoader");
 
-    const { buildTypeUsageGraph } = require("../core/type/buildTypeUsageGraph");
+    const { buildTypeUsageGraph } = await import("../core/type/buildTypeUsageGraph");
 
     const ignorePatterns = (args.ignore || []).map(String);
     const files = walkFiles(projectRoot, ignorePatterns);
@@ -174,6 +174,7 @@ function resolveAndValidateCwd(rawCwd?: string): string {
 
       if (typesMode) {
         const { logUnusedExportedTypes, logUnusedLocalTypes } = await import("./typesFormat.js");
+
         logUnusedExportedTypes(results.unusedExportedTypes ?? []);
         logUnusedLocalTypes(results.unusedLocalTypes ?? []);
       }
