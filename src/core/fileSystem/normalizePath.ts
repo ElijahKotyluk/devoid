@@ -1,4 +1,4 @@
-import { resolve } from "path";
+import { resolve } from "node:path";
 
 // Memoize normalized paths, since this is called frequently
 const normalizedFileCache = new Map<string, string>();

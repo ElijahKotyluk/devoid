@@ -8,7 +8,7 @@
  * TypeScript compiler API. No normalization or path resolution is done here.
  */
 
-import path from "path";
+import path from "node:path";
 import ts from "typescript";
 
 export interface TSConfigInfo {

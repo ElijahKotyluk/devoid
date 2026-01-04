@@ -5,7 +5,7 @@ import React from "react";
 // @ts-ignore
 import something from "unknown-module";
 
-import fs from "fs";
+import fs from "node:fs";
 
 export function useThings() {
   return {

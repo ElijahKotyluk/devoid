@@ -1,6 +1,6 @@
 import assert from "assert";
+import path from "node:path";
 import test from "node:test";
-import path from "path";
 
 import { walkFiles } from "../../src/core/fileSystem/walkFiles";
 

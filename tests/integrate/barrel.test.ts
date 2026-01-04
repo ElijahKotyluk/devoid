@@ -1,7 +1,7 @@
 import assert from "assert/strict";
-import fs from "fs";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
-import path from "path";
 
 import { analyzeProject } from "../../src/core/analyzer.js";
 

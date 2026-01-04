@@ -1,7 +1,7 @@
 import assert from "assert";
-import fs from "fs";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
-import path from "path";
 
 import { analyzeExportUsage } from "../../src/core/exports/exportUsage.js";
 import { scanExports } from "../../src/core/exports/scanExports.js";

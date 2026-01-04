@@ -1,8 +1,8 @@
 import assert from "assert/strict";
-import fs from "fs";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
-import os from "os";
-import path from "path";
 
 import { runCLI } from "./utils/runCLI";
 

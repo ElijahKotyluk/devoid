@@ -1,7 +1,7 @@
 import assert from "assert/strict";
-import fs from "fs";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
-import path from "path";
 
 import { resolveExportGraph } from "../../src/core/exports/resolveExportGraph.js";
 import { scanExports } from "../../src/core/exports/scanExports.js";

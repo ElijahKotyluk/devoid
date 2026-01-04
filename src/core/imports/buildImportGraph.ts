@@ -11,7 +11,7 @@
  * This graph is later consumed by the export-usage analyzer.
  */
 
-import path from "path";
+import path from "node:path";
 import ts from "typescript";
 import { normalizeFilePath } from "../fileSystem/normalizePath";
 import { TSConfigInfo } from "../tsconfig/tsconfigLoader";
