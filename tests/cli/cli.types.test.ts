@@ -18,7 +18,7 @@ test("devoid: without --types flag, type results are not included", async () => 
 
 test("devoid: --types reports unused exported and unused local types", async () => {
   const res = await runCLI([FIXTURE_ROOT, "--types", "--json"]);
-  
+
   assert.equal(res.code, 0);
 
   const parsed = JSON.parse(res.stdout);
