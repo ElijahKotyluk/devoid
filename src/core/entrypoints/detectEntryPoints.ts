@@ -7,8 +7,8 @@
  * No filesystem traversal or AST parsing happens here.
  */
 
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import { normalizeFilePath } from "../fileSystem/normalizePath";
 
 export interface EntryPointInfo {

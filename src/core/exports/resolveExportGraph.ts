@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { intern } from "../../utils";
 import type { ExportInfo } from "./scanExports";
 
