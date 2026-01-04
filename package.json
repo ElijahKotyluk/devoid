@@ -1,6 +1,6 @@
 {
   "name": "devoid",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A modern dead-code analysis and usage graph engine for JavaScript/TypeScript.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -37,6 +37,10 @@
     "typescript": "^5.9.3"
   },
   "author": "Elijah Kotyluk <elijah@elijahkotyluk.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elijahkotyluk/devoid"
+  },
   "license": "MIT",
   "packageManager": "pnpm@10.22.0",
   "devDependencies": {
