@@ -53,7 +53,7 @@ yarn add -D devoid
 devoid src/
 ```
 
-## Commmon Flags
+## Common Flags
 
 ```sh
 devoid src/ --exports
