@@ -1,6 +1,6 @@
 {
   "name": "devoid",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A modern dead-code analysis and usage graph engine for JavaScript/TypeScript.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
