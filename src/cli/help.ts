@@ -24,6 +24,7 @@ ${colors.bold}Analysis Options:${colors.reset}
   --exports               List unused exports
   --files                 List unused files
   --locals, --identifiers List unused local identifiers
+  --types                 Enable type-only analysis (unused exported + unused local types)
   --track-all-locals      Count all variable declarations (strict mode)
 
 ${colors.bold}Output Options:${colors.reset}
@@ -37,6 +38,8 @@ ${colors.bold}Examples:${colors.reset}
   devoid src/ --json
   devoid src/ --exports
   devoid src/ --files --locals
+  devoid src/ --types
+  devoid src/ --types --json
   devoid src/ --track-all-locals
   devoid internal src/utils/helpers.ts
   devoid internal src/module.ts --track-all-locals
