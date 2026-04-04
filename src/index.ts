@@ -1,4 +1,5 @@
 export { analyzeProject } from "./core/analyzer";
+export type { AnalyzeOptions } from "./core/analyzer";
 
 // Re-export common result types for convenience
 export type { LocalUsageResult } from "./core/locals/analyzeLocalUsage";

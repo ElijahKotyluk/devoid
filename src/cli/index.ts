@@ -16,7 +16,7 @@ export function isNodeError(error: unknown): error is NodeJS.ErrnoException {
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
-    typeof (error as any)?.code === "string"
+    typeof (error as NodeJS.ErrnoException).code === "string"
   );
 }
 
@@ -67,7 +67,7 @@ function resolveAndValidateCwd(rawCwd?: string): string {
   const args = parseArgs(process.argv.slice(2));
   const [command, targetPath] = args._;
 
-  const cwd = resolveAndValidateCwd(args.cwd);
+  const cwd = resolveAndValidateCwd(args.cwd as string | undefined);
 
   // Internal single-file analysis mode
   if (command === "internal") {
@@ -134,32 +134,38 @@ function resolveAndValidateCwd(rawCwd?: string): string {
   }
 
   // Run full-project analysis (existing behavior)
-  const results: any = analyzeProject(projectRoot, args);
+  const ignorePatterns = args.ignore
+    ? (Array.isArray(args.ignore) ? args.ignore : [args.ignore]).map(String)
+    : [];
+  const results = analyzeProject(projectRoot, {
+    ignore: ignorePatterns,
+    trackAllLocals: args["track-all-locals"] === true,
+  });
+
+  // Optional type analysis results
+  let unusedExportedTypes: { file: string; name: string }[] = [];
+  let unusedLocalTypes: { file: string; name: string }[] = [];
 
   // Optional: run types analysis ONLY when requested
   if (typesMode) {
     const { walkFiles } = await import("../core/fileSystem/walkFiles");
-
     const { loadTSConfig } = await import("../core/tsconfig/tsconfigLoader");
-
     const { buildTypeUsageGraph } = await import("../core/type/buildTypeUsageGraph");
 
-    const ignorePatterns = (args.ignore || []).map(String);
     const files = walkFiles(projectRoot, ignorePatterns);
     const tsConfig = loadTSConfig(projectRoot);
-
     const typeGraph = buildTypeUsageGraph(files, tsConfig);
 
-    results.unusedExportedTypes = typeGraph.unusedExportedTypes;
-    results.unusedLocalTypes = typeGraph.unusedLocalTypes;
-
-    // Attach into verbose graphs too
-    if (results.graphs) results.graphs.types = typeGraph;
+    unusedExportedTypes = typeGraph.unusedExportedTypes;
+    unusedLocalTypes = typeGraph.unusedLocalTypes;
   }
 
   // JSON output
   if (args.json) {
-    log(JSON.stringify(results, null, 2));
+    const jsonOutput = typesMode
+      ? { ...results, unusedExportedTypes, unusedLocalTypes }
+      : results;
+    log(JSON.stringify(jsonOutput, null, 2));
     process.exit(0);
   }
 
@@ -175,8 +181,8 @@ function resolveAndValidateCwd(rawCwd?: string): string {
       if (typesMode) {
         const { logUnusedExportedTypes, logUnusedLocalTypes } = await import("./typesFormat.js");
 
-        logUnusedExportedTypes(results.unusedExportedTypes ?? []);
-        logUnusedLocalTypes(results.unusedLocalTypes ?? []);
+        logUnusedExportedTypes(unusedExportedTypes);
+        logUnusedLocalTypes(unusedLocalTypes);
       }
 
       if (args.verbose) logVerbose(results.graphs);

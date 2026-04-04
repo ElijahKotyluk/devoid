@@ -14,8 +14,13 @@
  *   -x
  *   positional args
  */
-export function parseArgs(argv: string[]) {
-  const args: Record<string, any> = { _: [] };
+export interface ParsedArgs {
+  _: string[];
+  [key: string]: string | boolean | string[];
+}
+
+export function parseArgs(argv: string[]): ParsedArgs {
+  const args: ParsedArgs = { _: [] };
 
   for (let i = 0; i < argv.length; i++) {
     const token = argv[i];

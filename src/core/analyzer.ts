@@ -17,10 +17,15 @@ import { buildImportGraph } from "./imports/buildImportGraph";
 import { loadTSConfig } from "./tsconfig/tsconfigLoader";
 import { buildUsageGraph } from "./usage/buildUsageGraph";
 
+export interface AnalyzeOptions {
+  ignore?: string[];
+  trackAllLocals?: boolean;
+}
+
 // Cache tsconfig loads per project root
 const tsconfigCache = new Map<string, ReturnType<typeof loadTSConfig>>();
 
-export function analyzeProject(root: string, options: any) {
+export function analyzeProject(root: string, options: AnalyzeOptions = {}) {
   const ignorePatterns = (options.ignore || []).map(String);
   const trackAllLocals = options.trackAllLocals === true;
 
