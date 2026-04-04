@@ -26,6 +26,7 @@ ${colors.bold}Analysis Options:${colors.reset}
   --locals, --identifiers List unused local identifiers
   --types                 Enable type-only analysis (unused exported + unused local types)
   --track-all-locals      Count all variable declarations (strict mode)
+  --deps                  Detect unused dependencies from package.json
   --explain <target>      Show why a file or export is used (e.g. --explain src/utils.ts:add)
   --fail-on-unused        Exit with code 1 if any unused items are found (useful for CI)
 

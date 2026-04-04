@@ -215,19 +215,32 @@ function resolveAndValidateCwd(rawCwd?: string): string {
     unusedLocalTypes = typeGraph.unusedLocalTypes;
   }
 
+  // Optional: unused dependency detection
+  let unusedDeps: string[] = [];
+  if (args.deps) {
+    const { walkFiles } = await import("../core/fileSystem/walkFiles");
+    const { detectUnusedDeps } = await import("../core/dependencies/detectUnusedDeps");
+
+    const files = walkFiles(projectRoot, ignorePatterns);
+    const depsResult = detectUnusedDeps(cwd, files);
+    unusedDeps = depsResult.unused;
+  }
+
   // Determine if anything unused was found
   const hasUnused =
     results.unusedExports.length > 0 ||
     results.unusedFiles.length > 0 ||
     results.unusedIdentifiers.length > 0 ||
     unusedExportedTypes.length > 0 ||
-    unusedLocalTypes.length > 0;
+    unusedLocalTypes.length > 0 ||
+    unusedDeps.length > 0;
 
   // JSON output
   if (args.json) {
-    const jsonOutput = typesMode
+    const jsonOutput: Record<string, unknown> = typesMode
       ? { ...results, unusedExportedTypes, unusedLocalTypes }
-      : results;
+      : { ...results };
+    if (args.deps) jsonOutput.unusedDependencies = unusedDeps;
     log(JSON.stringify(jsonOutput, null, 2));
     process.exit(failOnUnused && hasUnused ? 1 : 0);
   }
@@ -246,6 +259,21 @@ function resolveAndValidateCwd(rawCwd?: string): string {
 
         logUnusedExportedTypes(unusedExportedTypes);
         logUnusedLocalTypes(unusedLocalTypes);
+      }
+
+      if (args.deps && unusedDeps.length > 0) {
+        const { colors } = await import("./colors.js");
+        const { heading } = await import("./format.js");
+        log(heading("Unused Dependencies"));
+        for (const dep of unusedDeps) {
+          log(`  ${colors.yellow}${dep}${colors.reset}`);
+        }
+        log("");
+      } else if (args.deps) {
+        const { colors } = await import("./colors.js");
+        const { heading } = await import("./format.js");
+        log(heading("Unused Dependencies"));
+        log(`  ${colors.dim}No unused dependencies found!${colors.reset}\n`);
       }
 
       if (args.verbose) logVerbose(results.graphs);
