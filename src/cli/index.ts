@@ -1,6 +1,7 @@
 // src/cli/index.ts
 
 import { analyzeProject } from "../core";
+import { loadConfig } from "../core/config/loadConfig";
 import { log } from "../utils";
 import { disableLogPrefix, enableLogPrefix } from "../utils/logger";
 import { disableColors, enableColors, isColorSupported } from "./colors";
@@ -105,7 +106,6 @@ function resolveAndValidateCwd(rawCwd?: string): string {
 
   const silent = args.silent === true;
   const summaryOnly = args["summary-only"] === true;
-  const typesMode = args.types === true;
 
   // --version
   if (args.version) {
@@ -128,18 +128,73 @@ function resolveAndValidateCwd(rawCwd?: string): string {
   if (!projectRoot) {
     if (!silent) {
       log("Error: No project path provided.");
-      log("Run `devoid --help` for usage.");
+      log("Usage: devoid <path> [options]");
+      log("Run `devoid --help` for all options.");
     }
     process.exit(1);
   }
 
-  // Run full-project analysis (existing behavior)
+  // Load config file (CLI flags override config values)
+  const config = loadConfig(cwd);
+
   const ignorePatterns = args.ignore
     ? (Array.isArray(args.ignore) ? args.ignore : [args.ignore]).map(String)
-    : [];
+    : (config.ignore ?? []);
+  const trackAllLocals = args["track-all-locals"] === true || config.trackAllLocals === true;
+  const typesMode = args.types === true || config.types === true;
+  const failOnUnused = args["fail-on-unused"] === true || config.failOnUnused === true;
+
+  // --explain mode: show why a file/export is used
+  if (args.explain && typeof args.explain === "string") {
+    const { walkFiles } = await import("../core/fileSystem/walkFiles");
+    const { loadTSConfig } = await import("../core/tsconfig/tsconfigLoader");
+    const { scanExports } = await import("../core/exports/scanExports");
+    const { buildImportGraph } = await import("../core/imports/buildImportGraph");
+    const { explainUsage } = await import("../core/explain/explainUsage");
+
+    const files = walkFiles(projectRoot, ignorePatterns);
+    const tsConfig = loadTSConfig(projectRoot);
+    const exportMap = scanExports(files);
+    const importGraph = buildImportGraph(files, tsConfig);
+
+    // Parse target — supports "file:export" or just "file"
+    const parts = args.explain.split(":");
+    const targetPath = path.resolve(cwd, parts[0]);
+    const exportName = parts[1] || undefined;
+
+    const result = explainUsage(targetPath, exportName, exportMap, importGraph);
+
+    if (args.json) {
+      log(JSON.stringify(result, null, 2));
+    } else if (!silent) {
+      const { colors } = await import("./colors.js");
+      log(`\n${colors.cyan}${colors.bold}Explain: ${result.target}${exportName ? ":" + exportName : ""}${colors.reset}`);
+      log(`Status: ${result.status === "used" ? colors.green + "USED" : colors.yellow + "UNUSED"}${colors.reset}`);
+
+      if (result.importedBy.length > 0) {
+        log(`\nImported by:`);
+        for (const imp of result.importedBy) {
+          log(`  ${imp.file}`);
+          log(`    symbols: ${imp.symbols.join(", ")}`);
+        }
+      } else {
+        log(`\nNo imports found for this target.`);
+      }
+
+      if (result.reexportChain.length > 0) {
+        log(`\nRe-export chain:`);
+        log(`  ${result.reexportChain.join(" → ")}`);
+      }
+      log("");
+    }
+
+    process.exit(0);
+  }
+
+  // Run full-project analysis
   const results = analyzeProject(projectRoot, {
     ignore: ignorePatterns,
-    trackAllLocals: args["track-all-locals"] === true,
+    trackAllLocals,
   });
 
   // Optional type analysis results
@@ -160,13 +215,21 @@ function resolveAndValidateCwd(rawCwd?: string): string {
     unusedLocalTypes = typeGraph.unusedLocalTypes;
   }
 
+  // Determine if anything unused was found
+  const hasUnused =
+    results.unusedExports.length > 0 ||
+    results.unusedFiles.length > 0 ||
+    results.unusedIdentifiers.length > 0 ||
+    unusedExportedTypes.length > 0 ||
+    unusedLocalTypes.length > 0;
+
   // JSON output
   if (args.json) {
     const jsonOutput = typesMode
       ? { ...results, unusedExportedTypes, unusedLocalTypes }
       : results;
     log(JSON.stringify(jsonOutput, null, 2));
-    process.exit(0);
+    process.exit(failOnUnused && hasUnused ? 1 : 0);
   }
 
   // Human-readable output
@@ -187,6 +250,11 @@ function resolveAndValidateCwd(rawCwd?: string): string {
 
       if (args.verbose) logVerbose(results.graphs);
     }
+  }
+
+  // CI mode: exit non-zero if unused items found
+  if (failOnUnused && hasUnused) {
+    process.exit(1);
   }
 })().catch((err) => {
   enableLogPrefix();

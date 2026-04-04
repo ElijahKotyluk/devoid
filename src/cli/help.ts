@@ -26,6 +26,8 @@ ${colors.bold}Analysis Options:${colors.reset}
   --locals, --identifiers List unused local identifiers
   --types                 Enable type-only analysis (unused exported + unused local types)
   --track-all-locals      Count all variable declarations (strict mode)
+  --explain <target>      Show why a file or export is used (e.g. --explain src/utils.ts:add)
+  --fail-on-unused        Exit with code 1 if any unused items are found (useful for CI)
 
 ${colors.bold}Output Options:${colors.reset}
   --verbose               Print full graphs (imports, exports, usage)
@@ -41,6 +43,9 @@ ${colors.bold}Examples:${colors.reset}
   devoid src/ --types
   devoid src/ --types --json
   devoid src/ --track-all-locals
+  devoid src/ --fail-on-unused
+  devoid src/ --explain src/utils.ts:add
+  devoid --cwd packages/core src/
   devoid internal src/utils/helpers.ts
   devoid internal src/module.ts --track-all-locals
 `);
