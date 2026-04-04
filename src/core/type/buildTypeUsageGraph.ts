@@ -1,8 +1,8 @@
-import path from "node:path";
 import ts from "typescript";
 
 import { intern } from "../../utils";
 import { normalizeFilePath } from "../fileSystem/normalizePath";
+import { resolveModuleSpecifier } from "../resolution/resolveModule";
 import type { TSConfigInfo } from "../tsconfig/tsconfigLoader";
 
 import { analyzeTypeUsage } from "./analyzeTypeUsage";
@@ -28,137 +28,6 @@ function getSourceText(filePath: string): string | undefined {
   return text ?? undefined;
 }
 
-function createResolutionKey(importerFilePath: string, moduleSpecifier: string): string {
-  return `${importerFilePath}\x1F${moduleSpecifier}`;
-}
-
-function lookupProjectFile(
-  unresolvedBasePath: string,
-  projectFiles: string[],
-  fileLookupCache: Map<string, string | null>,
-): string | null {
-  const cached = fileLookupCache.get(unresolvedBasePath);
-  if (cached !== undefined) return cached;
-
-  const candidatePaths = [
-    unresolvedBasePath,
-    unresolvedBasePath + ".ts",
-    unresolvedBasePath + ".tsx",
-    unresolvedBasePath + ".js",
-    unresolvedBasePath + ".jsx",
-    path.join(unresolvedBasePath, "index.ts"),
-    path.join(unresolvedBasePath, "index.tsx"),
-    path.join(unresolvedBasePath, "index.js"),
-    path.join(unresolvedBasePath, "index.jsx"),
-  ];
-
-  for (const candidatePath of candidatePaths) {
-    const match = projectFiles.find((p) => path.resolve(p) === path.resolve(candidatePath));
-
-    if (match) {
-      fileLookupCache.set(unresolvedBasePath, match);
-
-      return match;
-    }
-  }
-
-  fileLookupCache.set(unresolvedBasePath, null);
-
-  return null;
-}
-
-function resolveTSConfigAlias(
-  moduleSpecifier: string,
-  tsconfig: TSConfigInfo,
-  projectFiles: string[],
-  fileLookupCache: Map<string, string | null>,
-): string | null {
-  if (!tsconfig.paths) return null;
-
-  for (const [aliasPattern, targetPatterns] of Object.entries(tsconfig.paths)) {
-    const wildcardIndex = aliasPattern.indexOf("*");
-
-    // Wildcard alias
-    if (wildcardIndex !== -1) {
-      const prefix = aliasPattern.slice(0, wildcardIndex);
-      const suffix = aliasPattern.slice(wildcardIndex + 1);
-
-      if (!moduleSpecifier.startsWith(prefix) || !moduleSpecifier.endsWith(suffix)) continue;
-
-      const wildcard = moduleSpecifier.slice(prefix.length, moduleSpecifier.length - suffix.length);
-
-      for (const targetPattern of targetPatterns) {
-        const substituted = targetPattern.replace("*", wildcard);
-        const abs = path.resolve(tsconfig.baseUrl ?? "", substituted);
-
-        const resolved = lookupProjectFile(abs, projectFiles, fileLookupCache);
-
-        if (resolved) return resolved;
-      }
-    }
-
-    // Exact alias
-    else if (moduleSpecifier === aliasPattern) {
-      for (const target of targetPatterns) {
-        const abs = path.resolve(tsconfig.baseUrl ?? "", target);
-        const resolved = lookupProjectFile(abs, projectFiles, fileLookupCache);
-
-        if (resolved) return resolved;
-      }
-    }
-  }
-
-  return null;
-}
-
-function resolveModuleSpecifierToProjectFile(
-  importerFilePath: string,
-  moduleSpecifier: string,
-  projectFiles: string[],
-  tsconfig: TSConfigInfo,
-  resolutionCache: Map<string, string>,
-  fileLookupCache: Map<string, string | null>,
-): string {
-  const key = createResolutionKey(importerFilePath, moduleSpecifier);
-  const cached = resolutionCache.get(key);
-
-  if (cached !== undefined) return cached;
-
-  const importerDir = path.dirname(importerFilePath);
-
-  // Relative
-  if (moduleSpecifier.startsWith(".")) {
-    const base = path.resolve(importerDir, moduleSpecifier);
-    const resolved = lookupProjectFile(base, projectFiles, fileLookupCache);
-
-    if (resolved) {
-      const n = normalizeFilePath(resolved);
-
-      resolutionCache.set(key, n);
-
-      return n;
-    }
-  }
-
-  // TSConfig alias
-  const aliasResolved = resolveTSConfigAlias(
-    moduleSpecifier,
-    tsconfig,
-    projectFiles,
-    fileLookupCache,
-  );
-  if (aliasResolved) {
-    const n = normalizeFilePath(aliasResolved);
-
-    resolutionCache.set(key, n);
-
-    return n;
-  }
-
-  resolutionCache.set(key, moduleSpecifier);
-
-  return moduleSpecifier;
-}
 
 function extractTypeImports(
   importNode: ts.ImportDeclaration,
@@ -266,6 +135,7 @@ export function buildTypeUsageGraph(filePaths: string[], tsconfig: TSConfigInfo)
     set.add(intern(originName));
   }
 
+  const projectFileSet = new Set(filePaths.map(normalizeFilePath));
   const resolutionCache = new Map<string, string>();
   const fileLookupCache = new Map<string, string | null>();
 
@@ -288,10 +158,10 @@ export function buildTypeUsageGraph(filePaths: string[], tsconfig: TSConfigInfo)
 
       if (importedTypeNames.length === 0 && !namespace) return;
 
-      const resolvedTarget = resolveModuleSpecifierToProjectFile(
+      const resolvedTarget = resolveModuleSpecifier(
         importerFile,
         moduleSpecifier,
-        filePaths,
+        projectFileSet,
         tsconfig,
         resolutionCache,
         fileLookupCache,

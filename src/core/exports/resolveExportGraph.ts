@@ -1,5 +1,6 @@
-import path from "node:path";
 import { intern } from "../../utils";
+import { normalizeFilePath } from "../fileSystem/normalizePath";
+import { resolveReexportTarget } from "../resolution/resolveModule";
 import type { ExportInfo } from "./scanExports";
 
 export interface ResolvedExportEntry {
@@ -18,43 +19,6 @@ type ResolvedExportMap = Record<string, ResolvedExportEntry[]>;
  */
 const projectCache = new WeakMap<Record<string, ExportInfo>, ResolvedExportMap>();
 
-// Resolves a re-export target into a file from `allFiles`.
-function resolveReexportTarget(
-  reexportingFile: string,
-  moduleSpecifier: string,
-  allFiles: string[],
-): string | null {
-  const absoluteSpecifierPath = path.resolve(moduleSpecifier);
-  const directFileMatch = allFiles.find(
-    (filePath) => path.resolve(filePath) === absoluteSpecifierPath,
-  );
-  if (directFileMatch) return directFileMatch;
-
-  const reexportingDirectory = path.dirname(reexportingFile);
-  const resolvedBasePath = path.resolve(reexportingDirectory, moduleSpecifier);
-
-  const candidatePaths = [
-    resolvedBasePath,
-    resolvedBasePath + ".ts",
-    resolvedBasePath + ".tsx",
-    resolvedBasePath + ".js",
-    resolvedBasePath + ".jsx",
-    path.join(resolvedBasePath, "index.ts"),
-    path.join(resolvedBasePath, "index.tsx"),
-    path.join(resolvedBasePath, "index.js"),
-    path.join(resolvedBasePath, "index.jsx"),
-  ];
-
-  for (const candidatePath of candidatePaths) {
-    const resolvedTarget = allFiles.find(
-      (filePath) => path.resolve(filePath) === path.resolve(candidatePath),
-    );
-    if (resolvedTarget) return resolvedTarget;
-  }
-
-  return null;
-}
-
 // Resolves all exports for all project files, including re-export chains.
 export function resolveExportGraph(
   exportMap: Record<string, ExportInfo>,
@@ -63,6 +27,8 @@ export function resolveExportGraph(
   const cachedGraph = projectCache.get(exportMap);
   if (cachedGraph) return cachedGraph;
 
+  const projectFileSet = new Set(allFiles.map(normalizeFilePath));
+  const fileLookupCache = new Map<string, string | null>();
   const fileResultCache = new Map<string, ResolvedExportEntry[]>();
   const resolvingStack = new Set<string>();
 
@@ -92,7 +58,7 @@ export function resolveExportGraph(
 
     // Wildcard re-exports
     for (const wildcardOrigin of fileExports.wildcardReexports) {
-      const targetFile = resolveReexportTarget(currentFile, wildcardOrigin, allFiles);
+      const targetFile = resolveReexportTarget(currentFile, wildcardOrigin, projectFileSet, fileLookupCache);
       if (!targetFile) continue;
 
       for (const resolvedExport of resolveFileExports(targetFile)) {
@@ -118,7 +84,7 @@ export function resolveExportGraph(
 
     // Named re-exports
     for (const reexportInfo of fileExports.namedReexports) {
-      const targetFile = resolveReexportTarget(currentFile, reexportInfo.from, allFiles);
+      const targetFile = resolveReexportTarget(currentFile, reexportInfo.from, projectFileSet, fileLookupCache);
       if (!targetFile) continue;
 
       const targetResolvedEntries = resolveFileExports(targetFile);
