@@ -35,7 +35,7 @@ export function loadConfig(projectRoot: string): DevoidConfig {
   return {};
 }
 
-function validateConfig(raw: unknown, configPath: string): DevoidConfig {
+function validateConfig(raw: unknown, _configPath: string): DevoidConfig {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return {};
   }

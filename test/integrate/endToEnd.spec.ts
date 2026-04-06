@@ -1,8 +1,8 @@
 import path from "node:path";
 
+import { describe, expect, it } from "unrift";
 import { analyzeProject } from "../../src/core/analyzer";
 import { fixtures } from "../helpers/fixtures";
-import { describe, expect, it } from "unrift";
 
 const projectRoot = fixtures("integrate", "fixtures", "project", "src");
 
@@ -15,9 +15,9 @@ describe("end-to-end", () => {
 
     const unusedExportNames = new Set(unusedExports.map((e) => `${e.file}:${e.name}`));
 
-    expect(
-      unusedExportNames.has(path.join(projectRoot, "utils", "math.ts") + ":multiply"),
-    ).toBe(true);
+    expect(unusedExportNames.has(path.join(projectRoot, "utils", "math.ts") + ":multiply")).toBe(
+      true,
+    );
     expect(
       unusedExportNames.has(path.join(projectRoot, "utils", "unused.ts") + ":unusedHelper"),
     ).toBe(true);

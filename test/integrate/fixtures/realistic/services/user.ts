@@ -3,7 +3,7 @@ import { formatDate } from "../utils/date";
 export function getUserProfile() {
   return {
     id: "123",
-    createdAt: formatDate(Date.now())
+    createdAt: formatDate(Date.now()),
   };
 }
 

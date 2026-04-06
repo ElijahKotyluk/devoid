@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default [
   {
-    ignores: ["dist/**", "node_modules/**", "tests/**/fixtures/**"],
+    ignores: ["dist/**", "node_modules/**", "test/**/fixtures/**"],
   },
   {
     files: ["src/**/*.ts"],
@@ -40,16 +40,22 @@ export default [
   },
 
   {
-    files: ["tests/**/*.ts"],
+    files: ["test/**/*.ts"],
     ignores: ["**/fixtures/**"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: null, // disable project mode for test files
+        project: path.join(__dirname, "test", "tsconfig.json"),
+        sourceType: "module",
+        ecmaVersion: "latest",
       },
     },
     plugins: {
       "@typescript-eslint": tsPlugin,
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "no-console": "off",
     },
   },
   {

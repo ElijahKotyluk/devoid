@@ -28,7 +28,6 @@ function getSourceText(filePath: string): string | undefined {
   return text ?? undefined;
 }
 
-
 function extractTypeImports(
   importNode: ts.ImportDeclaration,
   fileAST: ts.SourceFile,

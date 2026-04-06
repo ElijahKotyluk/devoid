@@ -1,8 +1,8 @@
 import path from "node:path";
 
+import { describe, expect, it } from "unrift";
 import { walkFiles } from "../../src/core/fileSystem/walkFiles";
 import { fixtures } from "../helpers/fixtures";
-import { describe, expect, it } from "unrift";
 
 const fixturesRoot = fixtures("utils", "fixtures", "walkFiles");
 

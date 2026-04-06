@@ -168,8 +168,12 @@ function resolveAndValidateCwd(rawCwd?: string): string {
       log(JSON.stringify(result, null, 2));
     } else if (!silent) {
       const { colors } = await import("./colors.js");
-      log(`\n${colors.cyan}${colors.bold}Explain: ${result.target}${exportName ? ":" + exportName : ""}${colors.reset}`);
-      log(`Status: ${result.status === "used" ? colors.green + "USED" : colors.yellow + "UNUSED"}${colors.reset}`);
+      log(
+        `\n${colors.cyan}${colors.bold}Explain: ${result.target}${exportName ? ":" + exportName : ""}${colors.reset}`,
+      );
+      log(
+        `Status: ${result.status === "used" ? colors.green + "USED" : colors.yellow + "UNUSED"}${colors.reset}`,
+      );
 
       if (result.importedBy.length > 0) {
         log(`\nImported by:`);

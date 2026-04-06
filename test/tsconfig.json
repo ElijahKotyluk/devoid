@@ -12,5 +12,5 @@
       "@utils/*": ["./fixtures/graph/utils/*"]
     }
   },
-  "include": ["**/*.ts", "../unrift.config.ts"]
+  "include": ["**/*.ts", "../unrift.config.ts", "../src/**/*.ts"]
 }

@@ -1,8 +1,8 @@
 import path from "node:path";
-import { normalizeFilePath } from "../fileSystem/normalizePath";
-import type { ImportRecord } from "../imports/buildImportGraph";
 import { resolveExportGraph } from "../exports/resolveExportGraph";
 import type { ExportInfo } from "../exports/scanExports";
+import { normalizeFilePath } from "../fileSystem/normalizePath";
+import type { ImportRecord } from "../imports/buildImportGraph";
 
 export interface ExplainResult {
   target: string;

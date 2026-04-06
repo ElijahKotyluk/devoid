@@ -58,7 +58,12 @@ export function resolveExportGraph(
 
     // Wildcard re-exports
     for (const wildcardOrigin of fileExports.wildcardReexports) {
-      const targetFile = resolveReexportTarget(currentFile, wildcardOrigin, projectFileSet, fileLookupCache);
+      const targetFile = resolveReexportTarget(
+        currentFile,
+        wildcardOrigin,
+        projectFileSet,
+        fileLookupCache,
+      );
       if (!targetFile) continue;
 
       for (const resolvedExport of resolveFileExports(targetFile)) {
@@ -84,7 +89,12 @@ export function resolveExportGraph(
 
     // Named re-exports
     for (const reexportInfo of fileExports.namedReexports) {
-      const targetFile = resolveReexportTarget(currentFile, reexportInfo.from, projectFileSet, fileLookupCache);
+      const targetFile = resolveReexportTarget(
+        currentFile,
+        reexportInfo.from,
+        projectFileSet,
+        fileLookupCache,
+      );
       if (!targetFile) continue;
 
       const targetResolvedEntries = resolveFileExports(targetFile);

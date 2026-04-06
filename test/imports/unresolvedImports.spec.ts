@@ -1,12 +1,12 @@
 import path from "node:path";
 
+import { describe, expect, it } from "unrift";
 import { analyzeExportUsage } from "../../src/core/exports/exportUsage";
 import { scanExports } from "../../src/core/exports/scanExports";
 import { buildImportGraph } from "../../src/core/imports/buildImportGraph";
 import { loadTSConfig } from "../../src/core/tsconfig/tsconfigLoader";
 import { fixtures } from "../helpers/fixtures";
 import { loadFiles } from "../helpers/loadFiles";
-import { describe, expect, it } from "unrift";
 
 const fixturesRoot = fixtures("imports", "fixtures", "unresolved");
 

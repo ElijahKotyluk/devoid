@@ -1,10 +1,10 @@
 import path from "node:path";
 
+import { describe, expect, it } from "unrift";
 import { buildImportGraph } from "../../src/core/imports/buildImportGraph";
 import { loadTSConfig } from "../../src/core/tsconfig/tsconfigLoader";
 import { fixtures } from "../helpers/fixtures";
 import { loadFiles } from "../helpers/loadFiles";
-import { describe, expect, it } from "unrift";
 
 const fixturesRoot = fixtures("imports", "fixtures", "importGraph");
 
@@ -42,9 +42,7 @@ describe("import graph", () => {
 
     expect(graph[userService]).toEqual([]);
 
-    const allTargets = Object.values(graph).flatMap((records) =>
-      records.map((r) => r.sourceFile),
-    );
+    const allTargets = Object.values(graph).flatMap((records) => records.map((r) => r.sourceFile));
     expect(allTargets.includes(userTypes)).toBe(false);
   });
 });
