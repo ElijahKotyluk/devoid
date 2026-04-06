@@ -14,7 +14,9 @@ import { heading } from "./format";
  *   • referenced identifiers
  *   • unused identifiers
  */
-export async function runInternalMode(filePath: string, args: any): Promise<void> {
+import type { ParsedArgs } from "./parser";
+
+export async function runInternalMode(filePath: string, args: ParsedArgs): Promise<void> {
   const SILENT_MODE = !!args.silent;
   let sourceText: string;
 

@@ -1,4 +1,7 @@
 export { analyzeProject } from "./core/analyzer";
+export type { AnalyzeOptions } from "./core/analyzer";
+export { loadConfig } from "./core/config/loadConfig";
+export type { DevoidConfig } from "./core/config/loadConfig";
 
 // Re-export common result types for convenience
 export type { LocalUsageResult } from "./core/locals/analyzeLocalUsage";

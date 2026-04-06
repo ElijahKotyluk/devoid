@@ -1,8 +1,8 @@
 import path from "node:path";
 
+import { describe, expect, it } from "unrift";
 import { fixtures } from "../helpers/fixtures";
 import { runCLI } from "../helpers/runCLI";
-import { describe, expect, it } from "unrift";
 
 const FIXTURE_ROOT = fixtures("cli", "fixtures", "types");
 
@@ -27,9 +27,7 @@ describe("CLI --types", () => {
     expect(Array.isArray(parsed.unusedExportedTypes)).toBe(true);
     expect(Array.isArray(parsed.unusedLocalTypes)).toBe(true);
 
-    const unusedExported = new Set(
-      parsed.unusedExportedTypes.map((e: any) => `${e.file}:${e.name}`),
-    );
+    const unusedExported = new Set(parsed.unusedExportedTypes.map((e) => `${e.file}:${e.name}`));
     const unusedLocal = new Set(parsed.unusedLocalTypes.map((e: any) => `${e.file}:${e.name}`));
 
     const typesFile = path.join(FIXTURE_ROOT, "types.ts");

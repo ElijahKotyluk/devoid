@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { describe, expect, it } from "unrift";
 import { resolveExportGraph } from "../../src/core/exports/resolveExportGraph";
 import { scanExports } from "../../src/core/exports/scanExports";
 import { fixtures } from "../helpers/fixtures";
-import { describe, expect, it } from "unrift";
 
 const root = fixtures("exports", "fixtures", "localPriority");
 

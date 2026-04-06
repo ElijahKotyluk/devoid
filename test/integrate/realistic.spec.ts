@@ -1,8 +1,8 @@
 import path from "node:path";
 
+import { describe, expect, it } from "unrift";
 import { analyzeProject } from "../../src/core/analyzer";
 import { fixtures } from "../helpers/fixtures";
-import { describe, expect, it } from "unrift";
 
 const ROOT = fixtures("integrate", "fixtures", "realistic");
 

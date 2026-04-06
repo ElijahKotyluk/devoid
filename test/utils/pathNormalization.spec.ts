@@ -1,7 +1,7 @@
 import path from "node:path";
 
-import { normalizeFilePath } from "../../src/core/fileSystem/normalizePath";
 import { describe, expect, it } from "unrift";
+import { normalizeFilePath } from "../../src/core/fileSystem/normalizePath";
 
 describe("normalizeFilePath", () => {
   it("normalizeFilePath: produces absolute, forward-slashed paths", () => {

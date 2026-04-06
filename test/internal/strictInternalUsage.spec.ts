@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { describe, expect, it } from "unrift";
 import { analyzeLocalUsage } from "../../src/core/locals/analyzeLocalUsage";
 import { fixtures } from "../helpers/fixtures";
-import { describe, expect, it } from "unrift";
 
 const fixturesRoot = fixtures("internal", "fixtures", "strict");
 

@@ -2,9 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import { describe, expect, it } from "unrift";
 import { detectEntryPoints } from "../../src/core/entrypoints/detectEntryPoints";
 import { normalizeFilePath } from "../../src/core/fileSystem/normalizePath";
-import { describe, expect, it } from "unrift";
 
 function writeFile(filePath: string, contents: string) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });

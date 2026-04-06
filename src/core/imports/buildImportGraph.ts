@@ -11,19 +11,10 @@
  * This graph is later consumed by the export-usage analyzer.
  */
 
-import path from "node:path";
 import ts from "typescript";
 import { normalizeFilePath } from "../fileSystem/normalizePath";
+import { resolveModuleSpecifier } from "../resolution/resolveModule";
 import { TSConfigInfo } from "../tsconfig/tsconfigLoader";
-
-// Reset per buildImportGraph() call
-let importResolutionCache: Map<string, string>;
-let fileLookupCache: Map<string, string | null>;
-
-/** Memoization key for importer + module specifier */
-function createImportResolutionKey(importerFilePath: string, moduleSpecifier: string): string {
-  return `${importerFilePath}\x1F${moduleSpecifier}`;
-}
 
 /**
  * A single import edge:
@@ -39,8 +30,9 @@ export function buildImportGraph(
   projectFiles: string[],
   tsconfig: TSConfigInfo,
 ): Record<string, ImportRecord[]> {
-  importResolutionCache = new Map();
-  fileLookupCache = new Map();
+  const resolutionCache = new Map<string, string>();
+  const fileLookupCache = new Map<string, string | null>();
+  const projectFileSet = new Set(projectFiles.map(normalizeFilePath));
 
   const importGraph: Record<string, ImportRecord[]> = {};
 
@@ -62,11 +54,13 @@ export function buildImportGraph(
       if (importClause?.isTypeOnly) return;
 
       const moduleSpecifier = node.moduleSpecifier.getText().replace(/['"]/g, "");
-      const resolvedTargetFile = resolveImportSpecifier(
+      const resolvedTargetFile = resolveModuleSpecifier(
         filePath,
         moduleSpecifier,
-        projectFiles,
+        projectFileSet,
         tsconfig,
+        resolutionCache,
+        fileLookupCache,
       );
 
       const symbols = extractImportedSymbols(node, sourceFile);
@@ -113,121 +107,4 @@ function extractImportedSymbols(
   }
 
   return [...importedSymbols];
-}
-
-// Resolve JS/TS module specifier into a project file path where possible.
-function resolveImportSpecifier(
-  importerFilePath: string,
-  moduleSpecifier: string,
-  projectFiles: string[],
-  tsconfig: TSConfigInfo,
-): string {
-  const cacheKey = createImportResolutionKey(importerFilePath, moduleSpecifier);
-  const cached = importResolutionCache.get(cacheKey);
-  if (cached !== undefined) return cached;
-
-  const importerDirectory = path.dirname(importerFilePath);
-
-  // Resolve "./" or "../" relative imports
-  if (moduleSpecifier.startsWith(".")) {
-    const relativeBasePath = path.resolve(importerDirectory, moduleSpecifier);
-    const resolvedFile = lookupProjectFile(relativeBasePath, projectFiles);
-
-    if (resolvedFile) {
-      const normalized = normalizeFilePath(resolvedFile);
-      importResolutionCache.set(cacheKey, normalized);
-      return normalized;
-    }
-  }
-
-  // TSConfig `paths` aliases
-  const aliasTarget = resolveTSConfigAlias(moduleSpecifier, tsconfig, projectFiles);
-  if (aliasTarget) {
-    const normalized = normalizeFilePath(aliasTarget);
-    importResolutionCache.set(cacheKey, normalized);
-    return normalized;
-  }
-
-  // Bare imports (external deps)
-  importResolutionCache.set(cacheKey, moduleSpecifier);
-  return moduleSpecifier;
-}
-
-// Resolve a TSConfig `paths` alias.
-function resolveTSConfigAlias(
-  moduleSpecifier: string,
-  tsconfig: TSConfigInfo,
-  projectFiles: string[],
-): string | null {
-  if (!tsconfig.paths) return null;
-
-  for (const [aliasPattern, targetPatterns] of Object.entries(tsconfig.paths)) {
-    const wildcardIndex = aliasPattern.indexOf("*");
-
-    // Wildcard alias
-    if (wildcardIndex !== -1) {
-      const prefix = aliasPattern.slice(0, wildcardIndex);
-      const suffix = aliasPattern.slice(wildcardIndex + 1);
-
-      const hasPrefix = moduleSpecifier.startsWith(prefix);
-      const hasSuffix = moduleSpecifier.endsWith(suffix);
-      if (!hasPrefix || !hasSuffix) continue;
-
-      const wildcardContent = moduleSpecifier.slice(
-        prefix.length,
-        moduleSpecifier.length - suffix.length,
-      );
-
-      for (const targetPattern of targetPatterns) {
-        const substitutedTarget = targetPattern.replace("*", wildcardContent);
-        const absoluteTargetPath = path.resolve(tsconfig.baseUrl ?? "", substitutedTarget);
-
-        const resolvedFile = lookupProjectFile(absoluteTargetPath, projectFiles);
-        if (resolvedFile) return resolvedFile;
-      }
-    }
-
-    // Exact-match alias
-    else if (moduleSpecifier === aliasPattern) {
-      for (const targetPath of targetPatterns) {
-        const absoluteTargetPath = path.resolve(tsconfig.baseUrl ?? "", targetPath);
-        const resolvedFile = lookupProjectFile(absoluteTargetPath, projectFiles);
-        if (resolvedFile) return resolvedFile;
-      }
-    }
-  }
-
-  return null;
-}
-
-// Try resolving a file using multiple extension/index patterns.
-function lookupProjectFile(unresolvedBasePath: string, projectFiles: string[]): string | null {
-  const cached = fileLookupCache.get(unresolvedBasePath);
-  if (cached !== undefined) return cached;
-
-  const candidatePaths = [
-    unresolvedBasePath,
-    unresolvedBasePath + ".ts",
-    unresolvedBasePath + ".tsx",
-    unresolvedBasePath + ".js",
-    unresolvedBasePath + ".jsx",
-    path.join(unresolvedBasePath, "index.ts"),
-    path.join(unresolvedBasePath, "index.tsx"),
-    path.join(unresolvedBasePath, "index.js"),
-    path.join(unresolvedBasePath, "index.jsx"),
-  ];
-
-  for (const candidatePath of candidatePaths) {
-    const matchingFile = projectFiles.find(
-      (projectFile) => path.resolve(projectFile) === path.resolve(candidatePath),
-    );
-
-    if (matchingFile) {
-      fileLookupCache.set(unresolvedBasePath, matchingFile);
-      return matchingFile;
-    }
-  }
-
-  fileLookupCache.set(unresolvedBasePath, null);
-  return null;
 }

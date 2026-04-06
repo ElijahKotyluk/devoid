@@ -2,8 +2,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { runCLI } from "../helpers/runCLI";
 import { describe, expect, it } from "unrift";
+import { runCLI } from "../helpers/runCLI";
 
 function writeFile(filePath: string, contents: string) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });

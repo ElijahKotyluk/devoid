@@ -1,11 +1,11 @@
 import path from "node:path";
 
+import { describe, expect, it } from "unrift";
 import type { ResolvedExportEntry } from "../../src/core/exports/resolveExportGraph";
 import { resolveExportGraph } from "../../src/core/exports/resolveExportGraph";
 import { scanExports } from "../../src/core/exports/scanExports";
 import { fixtures } from "../helpers/fixtures";
 import { loadFiles } from "../helpers/loadFiles";
-import { describe, expect, it } from "unrift";
 
 const FIX = fixtures("exports", "fixtures", "conflictingExports");
 
